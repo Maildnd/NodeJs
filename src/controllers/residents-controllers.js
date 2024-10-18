@@ -1,5 +1,3 @@
-const { createClient } = require("@supabase/supabase-js");
-
 const HttpError = require("../models/http-error");
 const { supabase } = require("../util/supabase");
 
