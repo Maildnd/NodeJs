@@ -15,6 +15,7 @@ const residentAccountRoute = require("./src/routes/resident-account-route");
 const campaignsRoute = require("./src/routes/campaigns-route");
 const campaignMailRoute = require("./src/routes/campaign-mail-route");
 const dashboardDetailsRoute = require("./src/routes/dashboard-details-route");
+const supportRoute = require("./src/routes/support-route");
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use("/api/resident-account", residentAccountRoute);
 app.use("/api/campaigns", campaignsRoute);
 app.use("/api/mail", campaignMailRoute);
 app.use("/api/dashboard", dashboardDetailsRoute);
+app.use("/api/support", supportRoute);
 
 const PORT = process.env.PORT || 4000;
 console.log("PORT", PORT);
