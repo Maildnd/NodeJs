@@ -1,4 +1,5 @@
 const { supabase } = require("../util/supabase");
+const { supabaseAdmin } = require("../util/supabase");
 
 let storedSession = null;
 
@@ -124,8 +125,56 @@ const updatePassword = async (req, res, next) => {
   }
 };
 
+const deleteAccount = async (req, res, next) => {
+  const { account_id } = req.body;
+  const { data, error } = await supabase
+    .from("resident_account")
+    .update({ delete_request: true })
+    .eq("id", account_id);
+  if (error) {
+    return res.status(500).json({
+      message: "Error deleting user",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    res.json({ message: "User deleted successfully" });
+  }
+};
+
+const deleteUser = async (req, res, next) => {
+  const { user_id } = req.body;
+
+  const response = await supabase
+    .from("user_profile_resident")
+    .delete()
+    .eq("id", user_id);
+  console.log("Response: ", response);
+  if (response.error) {
+    return res.status(500).json({
+      message: "Error deleting user profile",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    const { data, error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+
+    if (error) {
+      return res.status(500).json({
+        message: "Error deleting user",
+        details: error.message,
+        code: error.code,
+      });
+    } else {
+      res.json({ message: "User deleted successfully" });
+    }
+  }
+};
+
 exports.signupUser = signupUser;
 exports.loginUser = loginUser;
 exports.logoutUser = logoutUser;
 exports.resetPassword = resetPassword;
 exports.updatePassword = updatePassword;
+exports.deleteAccount = deleteAccount;
+exports.deleteUser = deleteUser;
