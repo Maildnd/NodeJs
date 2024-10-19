@@ -16,4 +16,8 @@ router.post("/resetPassword", authResidentControllers.resetPassword);
 
 router.post("/updatePassword", authResidentControllers.updatePassword);
 
+router.post("/deleteAccount", authResidentControllers.deleteAccount);
+
+router.post("/deleteUser", authResidentControllers.deleteUser);
+
 module.exports = router;
