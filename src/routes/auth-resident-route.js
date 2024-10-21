@@ -10,9 +10,11 @@ router.post("/login", authResidentControllers.loginUser);
 
 // router.post("/getUserSession", authResidentControllers.getUserSession);
 
-router.post("/logout", authResidentControllers.logoutUser);
+router.post("/requestOTP", authResidentControllers.requestOTP);
 
-router.post("/resetPassword", authResidentControllers.resetPassword);
+router.post("/verifyOTP", authResidentControllers.verifyOTP);
+
+router.post("/logout", authResidentControllers.logoutUser);
 
 router.post("/updatePassword", authResidentControllers.updatePassword);
 

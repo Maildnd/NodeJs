@@ -79,6 +79,39 @@ const getUserData = async (user_id, access_token, res, next) => {
   }
 };
 
+const requestOTP = async (req, res, next) => {
+  const { email } = req.body;
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    return res.status(500).json({
+      message: "Error sending OTP",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    res.json({ message: "OTP sent successfully" });
+  }
+};
+
+const verifyOTP = async (req, res, next) => {
+  const { token, email } = req.body;
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+
+  if (error) {
+    return res.status(500).json({
+      message: "Error verifying email",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    getUserData(data.user.id, data.session.access_token, res, next);
+  }
+};
+
 const logoutUser = async (req, res, next) => {
   const { error } = await supabase.auth.signOut();
   if (error) {
@@ -92,27 +125,10 @@ const logoutUser = async (req, res, next) => {
   }
 };
 
-const resetPassword = async (req, res, next) => {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(
-    req.body.email,
-    {
-      redirectTo: req.body.redirectTo,
-    }
-  );
-  if (error) {
-    return res.status(500).json({
-      message: "Error resetting password",
-      details: error.message,
-      code: error.code,
-    });
-  } else {
-    res.json({ message: "Password reset request successful", data: data });
-  }
-};
-
 const updatePassword = async (req, res, next) => {
+  const { password } = req.body;
   const { error } = await supabase.auth.updateUser({
-    password: req.body.password,
+    password: password,
   });
   if (error) {
     return res.status(500).json({
@@ -173,8 +189,9 @@ const deleteUser = async (req, res, next) => {
 
 exports.signupUser = signupUser;
 exports.loginUser = loginUser;
+exports.requestOTP = requestOTP;
+exports.verifyOTP = verifyOTP;
 exports.logoutUser = logoutUser;
-exports.resetPassword = resetPassword;
 exports.updatePassword = updatePassword;
 exports.deleteAccount = deleteAccount;
 exports.deleteUser = deleteUser;
