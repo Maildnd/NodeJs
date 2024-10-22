@@ -159,7 +159,8 @@ const validateAddress = async (req, res, next) => {
           code: "USER_NOT_FOUND",
         });
       } else {
-        await createCampaignMail(data[0].resident_account, next);
+        await createCampaignMailByMap(data[0].resident_account, res);
+        await createCampaignMailByZipCodes(data[0].resident_account, res);
         res.json({
           user: data[0],
         });
@@ -168,39 +169,53 @@ const validateAddress = async (req, res, next) => {
   }
 };
 
-const createCampaignMail = async (resident, next) => {
+const createCampaignMailByMap = async (resident, res) => {
   const { data, error } = await supabase.rpc("get_nearby_campaigns", {
     residentlat: resident.lat,
     residentlng: resident.lng,
   });
   if (error) {
-    console.error(
-      "Error creating campaign mails:",
-      JSON.stringify(error.message)
-    );
+    console.log("Error: ", error.code, error.message);
+  } else {
+    createMail(data, resident.id);
+  }
+};
+
+const createCampaignMailByZipCodes = async (resident, res) => {
+  console.log("Resident Postal Code: ", resident.postal_code);
+  const { data, error } = await supabase
+    .from("campaign")
+    .select("id")
+    .contains("zip_codes", [resident.postal_code]);
+  if (error) {
+    console.log("Error: ", error.code, error.message);
     return res.status(500).json({
       message: "Error creating campaign mails",
       details: error.message,
       code: error.code,
     });
   } else {
-    mailData = [];
-    data.forEach((campaign) => {
-      const mail = {
-        campaign: campaign.id,
-        resident_account: resident.id,
-      };
-      mailData.push(mail);
-    });
-    const mailInsertRes = await supabase.from("mail").insert(mailData);
-    if (mailInsertRes.error) {
-      console.error(
-        "Error creating campaign mail:",
-        JSON.stringify(mailInsertRes.error.message)
-      );
-    } else {
-      console.log("Campaign mail created successfully: ", data);
-    }
+    createMail(data, resident.id);
+  }
+};
+
+const createMail = async (data, residentId) => {
+  mailData = [];
+  data.forEach((campaign) => {
+    const mail = {
+      campaign: campaign.id,
+      resident_account: residentId,
+    };
+    mailData.push(mail);
+  });
+  const mailInsertRes = await supabase.from("mail").insert(mailData);
+  if (mailInsertRes.error) {
+    console.error(
+      "Error creating campaign mail:",
+      JSON.stringify(mailInsertRes.error.message)
+    );
+  } else {
+    console.log("Campaign mail created successfully: ", data);
   }
 };
 

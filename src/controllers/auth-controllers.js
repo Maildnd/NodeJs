@@ -26,8 +26,7 @@ const signupUser = async (req, res, next) => {
     });
   } else {
     res.json({
-      access_token: data.session.access_token,
-      error: null,
+      message: "User signed up successfully",
     });
   }
 };
@@ -144,9 +143,11 @@ const updatePassword = async (req, res, next) => {
 };
 
 const verifyOTP = async (req, res, next) => {
+  const { token, email } = req.body;
   const { data, error } = await supabase.auth.verifyOtp({
-    type: "recovery",
-    token_hash: req.body.token_hash,
+    email,
+    token,
+    type: "email",
   });
   if (error) {
     return res.status(500).json({
@@ -155,7 +156,7 @@ const verifyOTP = async (req, res, next) => {
       code: error.code,
     });
   } else {
-    res.json({ message: "OTP verified successfully", data: data });
+    res.json({ access_token: data.session.access_token });
   }
 };
 
