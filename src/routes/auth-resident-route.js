@@ -14,6 +14,8 @@ router.post("/requestOTP", authResidentControllers.requestOTP);
 
 router.post("/verifyOTP", authResidentControllers.verifyOTP);
 
+router.post("/resendOTP", authResidentControllers.resendOTP);
+
 router.post("/logout", authResidentControllers.logoutUser);
 
 router.post("/updatePassword", authResidentControllers.updatePassword);

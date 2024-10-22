@@ -26,7 +26,9 @@ const signupUser = async (req, res, next) => {
       code: error.code,
     });
   } else {
-    getUserData(data.user.id, data.session.access_token, res, next);
+    res.json({
+      message: "User signed up successfully",
+    });
   }
 };
 
@@ -112,6 +114,23 @@ const verifyOTP = async (req, res, next) => {
   }
 };
 
+const resendOTP = async (req, res, next) => {
+  const { email } = req.body;
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: email,
+  });
+  if (error) {
+    return res.status(500).json({
+      message: "Error sending OTP",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    res.json({ message: "OTP sent successfully" });
+  }
+};
+
 const logoutUser = async (req, res, next) => {
   const { error } = await supabase.auth.signOut();
   if (error) {
@@ -191,6 +210,7 @@ exports.signupUser = signupUser;
 exports.loginUser = loginUser;
 exports.requestOTP = requestOTP;
 exports.verifyOTP = verifyOTP;
+exports.resendOTP = resendOTP;
 exports.logoutUser = logoutUser;
 exports.updatePassword = updatePassword;
 exports.deleteAccount = deleteAccount;
