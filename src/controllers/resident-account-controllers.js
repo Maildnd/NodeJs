@@ -20,7 +20,7 @@ const updateProfile = async (req, res, next) => {
       code: error.code,
     });
   } else {
-    res.json({ data: data });
+    res.json({ user: data[0] });
   }
 };
 
