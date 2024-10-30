@@ -71,6 +71,35 @@ const getResidentsCountByZipcodes = async (req, res, next) => {
   }
 };
 
+const connectByCode = async (req, res, next) => {
+  const { code, user_id } = req.body;
+  const { data, error } = await supabase.rpc("get_resident_account_by_code", {
+    code,
+  });
+  if (error) {
+    return res.status(500).json({
+      message: "Error retrieving resident account by code",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    const updateRes = await supabase
+      .from("user_profile_resident")
+      .update({ resident_account: data[0].id })
+      .select("*, resident_account(*)")
+      .eq("id", user_id);
+    if (updateRes.error) {
+      return res.status(500).json({
+        message: "Error connecting to resident account",
+        details: updateRes.error.message,
+        code: updateRes.error.code,
+      });
+    } else {
+      res.json({ user: updateRes.data[0] });
+    }
+  }
+};
+
 const registerAddress = async (req, res, next) => {
   console.log("Create Residents Req", req.body);
   const { name, street, street2, city, state, postal_code, country, user_id } =
@@ -222,5 +251,6 @@ const createMail = async (data, residentId) => {
 exports.registerAddress = registerAddress;
 exports.validateAddress = validateAddress;
 exports.getResidentsCount = getResidentsCount;
+exports.connectByCode = connectByCode;
 exports.getZipCodes = getZipCodes;
 exports.getResidentsCountByZipcodes = getResidentsCountByZipcodes;

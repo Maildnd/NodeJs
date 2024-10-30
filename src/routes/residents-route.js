@@ -13,6 +13,8 @@ router.post(
   residentsControllers.getResidentsCountByZipcodes
 );
 
+router.post("/connectByCode", residentsControllers.connectByCode);
+
 router.post("/registerAddress", residentsControllers.registerAddress);
 
 router.post("/validateAddress", residentsControllers.validateAddress);
