@@ -85,7 +85,7 @@ const connectByCode = async (req, res, next) => {
   } else {
     const updateRes = await supabase
       .from("user_profile_resident")
-      .update({ resident_account: data[0].id })
+      .update({ resident_account: data[0].id, profile_completed: true })
       .select("*, resident_account(*)")
       .eq("id", user_id);
     if (updateRes.error) {
