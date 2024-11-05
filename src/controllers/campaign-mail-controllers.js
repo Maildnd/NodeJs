@@ -40,6 +40,8 @@ const getCampaignMail = async (req, res, next) => {
           coupons: mail.campaign.coupons,
           promotions: mail.campaign.promotions,
           tags: mail.campaign.tags,
+          viewed: mail.viewed,
+          premium: mail.campaign.premium,
           mailType:
             mail.campaign.content_type === "images" ? "flyer" : "envelope",
         });
