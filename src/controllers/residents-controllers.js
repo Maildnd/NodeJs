@@ -1,5 +1,12 @@
 const HttpError = require("../models/http-error");
 const { supabase } = require("../util/supabase");
+const axios = require("axios");
+const {
+  USPS_CLIENT_ID,
+  USPS_CLIENT_SECRET,
+  USPS_AUTH_URL,
+  USPS_ADDRESS_URL,
+} = require("../../config-global");
 
 const getCoordsForAddress = require("../util/location");
 const res = require("express/lib/response");
@@ -97,6 +104,105 @@ const connectByCode = async (req, res, next) => {
     } else {
       res.json({ user: updateRes.data[0] });
     }
+  }
+};
+
+const validateAddressUSPS = async (req, res, next) => {
+  const { street, street2_type, street2, city, state, postal_code } = req.body;
+
+  const access_token = await authorizeUSPSAccount();
+
+  const address_params_initial = {
+    streetAddress: street,
+    city,
+    state,
+    ZIPCode: postal_code,
+  };
+
+  const initialResponse = await getUSPSAddress(
+    access_token,
+    address_params_initial
+  );
+  if (initialResponse.dpv_confirmation == "Y") {
+    res.json({ usps_address: initialResponse.usps_address });
+  } else {
+    const address_params_secondary = {
+      ...address_params_initial,
+      secondaryAddress: street2,
+    };
+    const secondaryResponse = await getUSPSAddress(
+      access_token,
+      address_params_secondary
+    );
+    if (secondaryResponse.dpv_confirmation == "Y") {
+      res.json({ usps_address: secondaryResponse.usps_address });
+    } else if (
+      secondaryResponse.dpv_confirmation == "D" ||
+      secondaryResponse.dpv_confirmation == "S"
+    ) {
+      res.status(500).json({
+        message: "Could not validate the address",
+        details:
+          "Address line 2 is invalid. Please provide a valid secondary address.",
+        code: "ADDRESS_VALIDATION_ERROR",
+      });
+    } else {
+      res.status(500).json({
+        message: "Could not validate the address",
+        details:
+          "Could not validate the address. Please provide a valid address.",
+        code: "ADDRESS_VALIDATION_ERROR",
+      });
+    }
+  }
+};
+
+const authorizeUSPSAccount = async () => {
+  const params = {
+    grant_type: "client_credentials",
+    client_id: USPS_CLIENT_ID,
+    client_secret: USPS_CLIENT_SECRET,
+  };
+  try {
+    const response = await axios.post(USPS_AUTH_URL, params);
+    return response.data.access_token;
+  } catch (error) {
+    return res.status(500).json({
+      message: "Could not access USPS API",
+      details:
+        "Error during validating address. Please try after sometime. If the error persists, please contact support.",
+      code: "USPS_API_AUTH_ERROR",
+    });
+  }
+};
+
+const getUSPSAddress = async (access_token, address_params) => {
+  console.log("Address Params: ", address_params);
+  try {
+    const response = await axios.get(USPS_ADDRESS_URL, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+      params: address_params,
+    });
+    const dpv_confirmation = response.data.additionalInfo.DPVConfirmation;
+    const addressData = response.data.address;
+    const usps_address = {
+      street: addressData.streetAddress,
+      street2: dpv_confirmation == "Y" ? addressData.secondaryAddress : "",
+      city: addressData.city,
+      state: addressData.state,
+      postal_code: addressData.ZIPCode + "-" + addressData.ZIPPlus4,
+    };
+
+    return { usps_address, dpv_confirmation };
+  } catch (error) {
+    return res.status(500).json({
+      message: "Could not validate the address",
+      details:
+        "Error during validating address. Please try after sometime. If the error persists, please contact support.",
+      code: "ADDRESS_VALIDATION_ERROR",
+    });
   }
 };
 
@@ -248,6 +354,7 @@ const createMail = async (data, residentId) => {
   }
 };
 
+exports.validateAddressUSPS = validateAddressUSPS;
 exports.registerAddress = registerAddress;
 exports.validateAddress = validateAddress;
 exports.getResidentsCount = getResidentsCount;
