@@ -80,6 +80,7 @@ const createCampaignMail = async (campaign_id) => {
       const { data: resData, error: resError } = await supabase
         .from("resident_account")
         .select("id")
+        .eq("verified", TRUE)
         .in("postal_code", data[0].zip_codes);
       residents = resData;
     }

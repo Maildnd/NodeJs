@@ -15,6 +15,8 @@ router.post(
 
 router.post("/connectByCode", residentsControllers.connectByCode);
 
+router.post("/validateAddressUSPS", residentsControllers.validateAddressUSPS);
+
 router.post("/registerAddress", residentsControllers.registerAddress);
 
 router.post("/validateAddress", residentsControllers.validateAddress);
