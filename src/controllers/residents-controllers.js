@@ -206,10 +206,68 @@ const getUSPSAddress = async (access_token, address_params) => {
   }
 };
 
+const checkExistingAddress = async (
+  street,
+  street2,
+  city,
+  state,
+  postal_code,
+  res
+) => {
+  const query = supabase
+    .from("resident_account")
+    .select("id")
+    .select("id")
+    .eq("street", street)
+    .eq("postal_code", postal_code)
+    .eq("city", city)
+    .eq("state", state);
+
+  if (street2 !== null) {
+    query.eq("street2", street2);
+  }
+
+  const existingAddress = await query;
+
+  console.log("Existing Address: ", existingAddress);
+
+  if (existingAddress.data) {
+    if (existingAddress.data.length > 0) {
+      res.status(500).json({
+        message: "Address already exists",
+        details:
+          "The address provided is already registered with us. Please use a different address.",
+        code: "ADDRESS_EXISTS",
+      });
+      return true;
+    }
+  } else {
+    res.status(500).json({
+      message: "Error fetching address",
+      details: existingAddress.error.message,
+      code: existingAddress.error.code,
+    });
+    return true;
+  }
+  return false;
+};
+
 const registerAddress = async (req, res, next) => {
   console.log("Create Residents Req", req.body);
   const { name, street, street2, city, state, postal_code, country, user_id } =
     req.body;
+
+  const addressExists = await checkExistingAddress(
+    street,
+    street2,
+    city,
+    state,
+    postal_code,
+    res
+  );
+  if (addressExists) {
+    return;
+  }
 
   let coordinates;
   try {
