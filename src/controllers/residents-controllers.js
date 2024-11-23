@@ -217,11 +217,11 @@ const checkExistingAddress = async (
   const query = supabase
     .from("resident_account")
     .select("id")
-    .select("id")
     .eq("street", street)
     .eq("postal_code", postal_code)
     .eq("city", city)
-    .eq("state", state);
+    .eq("state", state)
+    .eq("verified", true);
 
   if (street2 !== null) {
     query.eq("street2", street2);
@@ -311,11 +311,28 @@ const registerAddress = async (req, res, next) => {
           code: updateRes.error.code,
         });
       } else {
-        res.status(201).json({ user: updateRes.data[0] });
+        try {
+          await createCampaignMailByMap(updateRes.data[0].resident_account);
+          await createCampaignMailByZipCodes(
+            updateRes.data[0].resident_account
+          );
+
+          res.status(201).json({ user: updateRes.data[0] });
+        } catch (error) {
+          return res.status(500).json({
+            message: "Error creating campaign mails",
+            details: "Error creating campaign mails",
+            code: "CAMPAIGN_MAIL_ERROR",
+          });
+        }
       }
     }
   } catch (error) {
-    return next(error);
+    return res.status(500).json({
+      message: "Error registering the address:",
+      details: error.message,
+      code: error.code,
+    });
   }
 };
 
@@ -352,8 +369,6 @@ const validateAddress = async (req, res, next) => {
           code: "USER_NOT_FOUND",
         });
       } else {
-        await createCampaignMailByMap(data[0].resident_account, res);
-        await createCampaignMailByZipCodes(data[0].resident_account, res);
         res.json({
           user: data[0],
         });
@@ -362,31 +377,27 @@ const validateAddress = async (req, res, next) => {
   }
 };
 
-const createCampaignMailByMap = async (resident, res) => {
+const createCampaignMailByMap = async (resident) => {
   const { data, error } = await supabase.rpc("get_nearby_campaigns", {
     residentlat: resident.lat,
     residentlng: resident.lng,
   });
   if (error) {
     console.log("Error: ", error.code, error.message);
+    return next(error);
   } else {
     createMail(data, resident.id);
   }
 };
 
-const createCampaignMailByZipCodes = async (resident, res) => {
-  console.log("Resident Postal Code: ", resident.postal_code);
+const createCampaignMailByZipCodes = async (resident) => {
   const { data, error } = await supabase
     .from("campaign")
     .select("id")
     .contains("zip_codes", [resident.postal_code]);
   if (error) {
     console.log("Error: ", error.code, error.message);
-    return res.status(500).json({
-      message: "Error creating campaign mails",
-      details: error.message,
-      code: error.code,
-    });
+    return next(error);
   } else {
     createMail(data, resident.id);
   }
