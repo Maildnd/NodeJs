@@ -16,6 +16,7 @@ const campaignsRoute = require("./src/routes/campaigns-route");
 const campaignMailRoute = require("./src/routes/campaign-mail-route");
 const dashboardDetailsRoute = require("./src/routes/dashboard-details-route");
 const supportRoute = require("./src/routes/support-route");
+const envRout = require("./src/routes/env-route");
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/campaigns", campaignsRoute);
 app.use("/api/mail", campaignMailRoute);
 app.use("/api/dashboard", dashboardDetailsRoute);
 app.use("/api/support", supportRoute);
+app.use("/api/env", envRout);
 
 const PORT = process.env.PORT || 4000;
 console.log("PORT", PORT);
