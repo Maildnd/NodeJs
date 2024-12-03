@@ -8,6 +8,8 @@ router.post("/getCampaignMail", campaignMailControllers.getCampaignMail);
 
 router.post("/updateMailView", campaignMailControllers.updateMailView);
 
+router.post("/getTransactions", campaignMailControllers.getTransactions);
+
 router.post("/getSavedList", campaignMailControllers.getSavedList);
 
 router.post("/createSavedList", campaignMailControllers.createSavedList);

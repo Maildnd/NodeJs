@@ -15,4 +15,6 @@ router.post("/getFeedback", residentAccountControllers.getFeedback);
 
 router.post("/sendFeedback", residentAccountControllers.sendFeedback);
 
+router.post("/submitRedemption", residentAccountControllers.submitRedemption);
+
 module.exports = router;

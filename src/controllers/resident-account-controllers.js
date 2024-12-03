@@ -87,7 +87,50 @@ const sendFeedback = async (req, res, next) => {
   }
 };
 
+const submitRedemption = async (req, res, next) => {
+  const {
+    user_account,
+    resident_account,
+    amount,
+    gift_card,
+    recipient_email,
+    recipient_name,
+  } = req.body;
+  const { data, error } = await supabase
+    .from("redemption")
+    .insert({
+      user_account,
+      resident_account,
+      amount,
+      gift_card,
+      recipient_email,
+      recipient_name,
+    })
+    .select("*");
+  if (error) {
+    return res.status(500).json({
+      message: "Error creating Redemption",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    const { data: res_account_data, error: res_account_error } = await supabase
+      .from("resident_account")
+      .select("wallet_balance")
+      .eq("id", resident_account);
+
+    const updated_balance = res_account_data[0].wallet_balance - amount;
+    const { data: res_data, error: res_error } = await supabase
+      .from("resident_account")
+      .update({ wallet_balance: updated_balance })
+      .eq("id", resident_account);
+
+    res.json({ message: "Redemption submitted successfully" });
+  }
+};
+
 exports.updateProfile = updateProfile;
 exports.updateNotifications = updateNotifications;
 exports.getFeedback = getFeedback;
 exports.sendFeedback = sendFeedback;
+exports.submitRedemption = submitRedemption;
