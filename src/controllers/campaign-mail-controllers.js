@@ -41,6 +41,7 @@ const getCampaignMail = async (req, res, next) => {
           promotions: mail.campaign.promotions,
           tags: mail.campaign.tags,
           viewed: mail.viewed,
+          viewed_at: mail.viewed_at,
           premium: mail.campaign.premium,
           mailType:
             mail.campaign.content_type === "images" ? "flyer" : "envelope",
@@ -134,7 +135,7 @@ const updateMailView = async (req, res, next) => {
   const { mail_id } = req.body;
   const { data, error } = await supabase
     .from("mail")
-    .update({ viewed: true })
+    .update({ viewed: true, viewed_at: new Date() })
     .eq("id", mail_id);
   if (error) {
     console.error("Error updating mail view:", JSON.stringify(error));
@@ -144,7 +145,130 @@ const updateMailView = async (req, res, next) => {
       code: error.code,
     });
   } else {
+    const { data: res_account_data, error: res_account_error } = await supabase
+      .from("mail")
+      .select("*, resident_account(id, verified, wallet_balance)")
+      .eq("id", mail_id);
+
+    if (res_account_data[0].resident_account.verified) {
+      const updated_balance =
+        res_account_data[0].resident_account.wallet_balance + 0.1;
+      const { data: res_data, error: res_error } = await supabase
+        .from("resident_account")
+        .update({ wallet_balance: updated_balance })
+        .eq("id", res_account_data[0].resident_account.id);
+    }
+
     res.json({ message: "Mail view updated successfully" });
+  }
+};
+
+const getTransactions = async (req, res, next) => {
+  const { account_id } = req.body;
+  const { data: account_data, error: account_error } = await supabase
+    .from("resident_account")
+    .select(
+      "id, verified, verified_date, wallet_balance, mail(*, campaign(title)), redemption(*), referral(*)"
+    )
+    .eq("id", account_id);
+  if (account_error) {
+    return res.status(500).json({
+      message: "Error fetching transactions",
+      details: account_error.message,
+      code: account_error.code,
+    });
+  } else {
+    const account = account_data[0];
+    if (account.verified) {
+      let transactions = [
+        {
+          id: account.id,
+          type: "credit",
+          name: "Sign up credit",
+          amount: 5.0,
+          dateTime: account.verified_date,
+          date: new Date(account.verified_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          credit_type: "signup",
+        },
+      ];
+      if (account.mail.length > 0) {
+        const mails = account.mail
+          .filter((mail) => mail.viewed === true)
+          .map((mail) => {
+            return {
+              id: mail.id,
+              type: "credit",
+              amount: 0.1,
+              dateTime: mail.viewed_at,
+              date: new Date(mail.viewed_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              }),
+              name: mail.campaign.title,
+              credit_type: "viewed_mail",
+            };
+          });
+        transactions = [...transactions, ...mails];
+        console.log("transactions: ", transactions);
+      }
+
+      if (account.redemption.length > 0) {
+        const redemptions = account.redemption.map((redemption) => {
+          return {
+            id: redemption.id,
+            type: "redemption",
+            amount: redemption.amount,
+            dateTime: redemption.created_at,
+            date: new Date(redemption.created_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+            name: "Redemption",
+            credit_type: "",
+          };
+        });
+        transactions = [...transactions, ...redemptions];
+      }
+
+      if (account.referral.length > 0) {
+        const referrals = account.referral
+          .filter((referral) => referral.completed === true)
+          .map((referral) => {
+            return {
+              id: referral.id,
+              type: "credit",
+              amount: 5.0,
+              dateTime: referral.completed_date,
+              date: new Date(referral.completed_date).toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                }
+              ),
+              name: "Referral",
+              credit_type: "referral",
+            };
+          });
+        transactions = [...transactions, ...referrals];
+      }
+
+      // Sort transactions by date
+      transactions.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+
+      res.json({
+        transactions: transactions,
+        wallet_balance: account.wallet_balance,
+      });
+    } else {
+      res.json({
+        transactions: [],
+        wallet_balance: 0,
+      });
+    }
   }
 };
 
@@ -282,6 +406,7 @@ const addMailToSavedList = async (req, res, next) => {
 exports.createCampaignMail = createCampaignMail;
 exports.getCampaignMail = getCampaignMail;
 exports.updateMailView = updateMailView;
+exports.getTransactions = getTransactions;
 exports.getSavedList = getSavedList;
 exports.createSavedList = createSavedList;
 exports.deleteSavedList = deleteSavedList;

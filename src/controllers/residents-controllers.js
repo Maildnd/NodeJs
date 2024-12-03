@@ -341,7 +341,7 @@ const validateAddress = async (req, res, next) => {
 
   const { data, error } = await supabase
     .from("resident_account")
-    .update({ verified: true })
+    .update({ verified: true, verified_date: new Date(), wallet_balance: 5.0 })
     .eq("id", account_id);
   if (error) {
     return res.status(500).json({
