@@ -4,7 +4,7 @@ const { supabaseAdmin } = require("../util/supabase");
 let storedSession = null;
 
 const signupUser = async (req, res, next) => {
-  const { email, password, last_name, first_name } = req.body;
+  const { email, password, last_name, first_name, referral_code } = req.body;
   const { data, error } = await supabase.auth.signUp({
     email: email,
     password: password,
@@ -14,6 +14,7 @@ const signupUser = async (req, res, next) => {
         last_name: last_name,
         display_name: first_name + " " + last_name,
         account_type: "resident",
+        referral_code: referral_code,
       },
     },
   });

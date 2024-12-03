@@ -168,7 +168,7 @@ const getTransactions = async (req, res, next) => {
   const { data: account_data, error: account_error } = await supabase
     .from("resident_account")
     .select(
-      "id, verified, verified_date, wallet_balance, mail(*, campaign(title)), redemption(*), referral(*)"
+      "id, verified, verified_date, wallet_balance, mail(*, campaign(title)), redemption(*), resident_account(*)"
     )
     .eq("id", account_id);
   if (account_error) {
@@ -233,23 +233,23 @@ const getTransactions = async (req, res, next) => {
         transactions = [...transactions, ...redemptions];
       }
 
-      if (account.referral.length > 0) {
-        const referrals = account.referral
-          .filter((referral) => referral.completed === true)
-          .map((referral) => {
+      if (account.resident_account.length > 0) {
+        const referrals = account.resident_account
+          .filter((residentAccount) => residentAccount.verified === true)
+          .map((residentAccount) => {
             return {
-              id: referral.id,
+              id: residentAccount.id,
               type: "credit",
               amount: 5.0,
-              dateTime: referral.completed_date,
-              date: new Date(referral.completed_date).toLocaleDateString(
+              dateTime: residentAccount.verified_date,
+              date: new Date(residentAccount.verified_date).toLocaleDateString(
                 "en-US",
                 {
                   month: "short",
                   day: "numeric",
                 }
               ),
-              name: "Referral",
+              name: "Referral (" + residentAccount.name + ")",
               credit_type: "referral",
             };
           });

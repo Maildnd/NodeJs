@@ -336,7 +336,7 @@ const registerAddress = async (req, res, next) => {
   }
 };
 
-const validateAddress = async (req, res, next) => {
+const verifyAddress = async (req, res, next) => {
   const { account_id, user_id } = req.body;
 
   const { data, error } = await supabase
@@ -350,27 +350,57 @@ const validateAddress = async (req, res, next) => {
       code: error.code,
     });
   } else {
-    const { data, error } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from("user_profile_resident")
       .select("*, resident_account(*)")
       .eq("id", user_id);
-    console.log("User Data: ", data);
-    if (error) {
+    if (userError) {
       return res.status(500).json({
         message: "Error fetching user profile",
         details: error.message,
         code: error.code,
       });
     } else {
-      if (data.length === 0) {
+      if (userData.length === 0) {
         return res.status(500).json({
           message: "User not found",
           details: "User with the given id not found",
           code: "USER_NOT_FOUND",
         });
       } else {
+        if (userData[0].referral_code) {
+          const code = userData[0].referral_code;
+          const { data: referral_account_data, error: referral_account_error } =
+            await supabase.rpc("get_resident_account_by_referral_code", {
+              code,
+            });
+          if (referral_account_data.length > 0) {
+            const referral_account = referral_account_data[0];
+            const referral_bonus = 5.0;
+            const referralUpdateRes = await supabase
+              .from("resident_account")
+              .update({
+                wallet_balance:
+                  referral_account.wallet_balance + referral_bonus,
+              })
+              .eq("id", referral_account.id);
+
+            const referralUpdateRes2 = await supabase
+              .from("resident_account")
+              .update({ referred_by: referral_account.id })
+              .eq("id", account_id);
+
+            if (referralUpdateRes.error || referralUpdateRes2.error) {
+              return res.status(500).json({
+                message: "Error updating referral account",
+                details: referralUpdateRes.error.message,
+                code: referralUpdateRes.error.code,
+              });
+            }
+          }
+        }
         res.json({
-          user: data[0],
+          user: userData[0],
         });
       }
     }
@@ -425,7 +455,7 @@ const createMail = async (data, residentId) => {
 
 exports.validateAddressUSPS = validateAddressUSPS;
 exports.registerAddress = registerAddress;
-exports.validateAddress = validateAddress;
+exports.verifyAddress = verifyAddress;
 exports.getResidentsCount = getResidentsCount;
 exports.connectByCode = connectByCode;
 exports.getZipCodes = getZipCodes;

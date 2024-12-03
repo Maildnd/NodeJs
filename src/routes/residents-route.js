@@ -19,6 +19,6 @@ router.post("/validateAddressUSPS", residentsControllers.validateAddressUSPS);
 
 router.post("/registerAddress", residentsControllers.registerAddress);
 
-router.post("/validateAddress", residentsControllers.validateAddress);
+router.post("/verifyAddress", residentsControllers.verifyAddress);
 
 module.exports = router;
