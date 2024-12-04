@@ -198,10 +198,14 @@ const getTransactions = async (req, res, next) => {
         const mails = account.mail
           .filter((mail) => mail.viewed === true)
           .map((mail) => {
+            let amount = 0.1;
+            if (mail.viewed_at < account.verified_date) {
+              amount = 0;
+            }
             return {
               id: mail.id,
               type: "credit",
-              amount: 0.1,
+              amount: amount,
               dateTime: mail.viewed_at,
               date: new Date(mail.viewed_at).toLocaleDateString("en-US", {
                 month: "short",
