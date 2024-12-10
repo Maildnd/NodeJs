@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.post("/updateProfile", residentAccountControllers.updateProfile);
 
+router.post("/updateToken", residentAccountControllers.updateToken);
+
 router.post(
   "/updateNotifications",
   residentAccountControllers.updateNotifications
