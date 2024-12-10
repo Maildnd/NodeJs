@@ -24,6 +24,26 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const updateToken = async (req, res, next) => {
+  const { user_id, account_id, token } = req.body;
+  const { data, error } = await supabase
+    .from("user_profile_resident")
+    .update({
+      token,
+    })
+    .eq("id", user_id)
+    .select("*, resident_account(*)");
+  if (error) {
+    return res.status(500).json({
+      message: "Error updating user profile",
+      details: error.message,
+      code: error.code,
+    });
+  } else {
+    res.json({ user: data[0] });
+  }
+};
+
 const updateNotifications = async (req, res, next) => {
   const {
     user_id,
@@ -130,6 +150,7 @@ const submitRedemption = async (req, res, next) => {
 };
 
 exports.updateProfile = updateProfile;
+exports.updateToken = updateToken;
 exports.updateNotifications = updateNotifications;
 exports.getFeedback = getFeedback;
 exports.sendFeedback = sendFeedback;

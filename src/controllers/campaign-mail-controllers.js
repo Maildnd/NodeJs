@@ -298,7 +298,7 @@ const getSavedList = async (req, res, next) => {
 };
 
 const createSavedList = async (req, res, next) => {
-  const { user_id, name } = req.body;
+  const { user_id, name, mail_id } = req.body;
   const { data, error } = await supabase
     .from("saved_list")
     .insert({ user_id, name })
@@ -311,8 +311,13 @@ const createSavedList = async (req, res, next) => {
       code: error.code,
     });
   } else {
+    const { data: mailData, error: mailError } = await supabase
+      .from("mail")
+      .update({ saved: true, saved_list: data[0].id })
+      .eq("id", mail_id);
+
     res.json({
-      lists: data,
+      newList: data[0],
     });
   }
 };
